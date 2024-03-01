@@ -1,6 +1,20 @@
 import pandas as pd
 import numpy as np
 
+def getActiveJurors(df: pd.DataFrame) -> pd.DataFrame:
+    """from the setSakes dataframe (subgraph.getAllStakeSets()) get the list of
+    all the active jurors
+    
+    inputs:
+     - df: AllStakeSets dataframe
+    outputs:
+     - df: with the address, newTotalStake, timestamp of the last stake
+    """
+    # Get the last SetStake from each juror.
+    active_jurors = df.groupby(by="address").last()
+    # Drop the jurors who unstake
+    active_jurors = active_jurors.loc[active_jurors['newTotalStake'] > 0, ['newTotalStake', 'subcourtID', 'timestamp']]
+    return active_jurors
 
 def getTimeSerieActiveJurors(df: pd.DataFrame)-> pd.DataFrame:
     """from the setSakes dataframe (subgraph.getAllStakeSets()) add a column
