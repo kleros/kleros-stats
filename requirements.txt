@@ -1,0 +1,6 @@
+plotly==5.19.0
+numpy==1.26.4
+pandas==2.2.1
+web3==6.15.1
+ipykernel==6.29.3
+nbformat>=4.2.0
