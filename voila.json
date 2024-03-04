@@ -1,0 +1,14 @@
+{
+    "VoilaConfiguration": {
+        "extension_config": {
+            "voila_topbar": {
+                "background": "#363636",
+                "textColor": "white",
+                "title": "Kleros Statistics",
+                "icon": "voila/files/pnk.png",
+                "kernelActivity": true,
+                "themeToggle": true
+            }
+        }
+    }
+}
