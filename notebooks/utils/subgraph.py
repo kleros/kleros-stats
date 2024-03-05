@@ -1667,3 +1667,47 @@ class KlerosBoardSubgraph(Subgraph):
         ], ignore_index=True,join="inner")
         df.sort_values(by='timestamp', inplace=True)
         return df
+    
+class PoHSubgrpah(Subgraph):
+    def __init__(self) -> None:
+        super(PoHSubgrpah,self).__init__(network='mainnet')
+        self.logger: logging.Logger = logging.getLogger(__name__)
+
+        # Node definitions
+        self.subgraph_name = 'andreimvp/pohv1-test'
+        self.subgraph_node += self.subgraph_name
+
+    @staticmethod
+    def _parseSubmission(submission) -> dict:
+        keys = submission.keys()
+        if 'registered' in keys:
+            submission['registered'] = True if submission['registered'] == 'true' else False
+        if 'submissionTime' in keys:
+            submission['submissionTime'] = int(submission['submissionTime'])
+        return submission
+
+    
+    def getAllSubmissions(self, initSubmissionTime: int = 1646282170) -> list[dict]:
+        submissions: list[dict] = []
+        while True:
+            query = (
+                '{submissions('
+                '    where: {status: None, submissionTime_gt: "'+ str(initSubmissionTime)+'", registered: true}'
+                '    first: 1000'
+                '    skip: 0'
+                ') {'
+                '    id'
+                '    registered'
+                '    status'
+                '    submissionTime'
+                '}}'
+            )
+            result = self._post_query(query)
+            if result is None:
+                break
+            else:
+                submissions.extend( result['submissions'])
+                initSubmissionTime = result['submissions'][-1]['submissionTime']
+        parse_submissions: list[dict] = [self._parseSubmission(submission) for submission in submissions]
+        return parse_submissions
+        
