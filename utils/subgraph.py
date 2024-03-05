@@ -3,7 +3,7 @@ import requests
 import os
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from collections import defaultdict
 import pandas as pd
 
@@ -25,7 +25,7 @@ class Subgraph():
 
     def _post_query(self, query):
         response: requests.Response = requests.post(self.subgraph_node, json={'query': query})
-        data: TypeJSON = response.json()
+        data = response.json()
         try:
             data = data['data']
         except KeyError:
