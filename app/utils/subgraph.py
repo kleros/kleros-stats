@@ -89,9 +89,9 @@ class KlerosBoardSubgraph(Subgraph):
 
         # Node definitions
         if self.network == 'gnosis':
-            self.subgraph_name = 'salgozino/klerosboard-xdai'
+            self.subgraph_name = 'klerosboard/klerosboard-gnosis'
         else:
-            self.subgraph_name = 'salgozino/klerosboard'
+            self.subgraph_name = 'klerosboard/klerosboard-mainnet'
         self.subgraph_node += self.subgraph_name
 
     @staticmethod
