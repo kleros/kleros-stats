@@ -9,7 +9,7 @@ from app.utils.oracles import CoinGecko
 from datetime import datetime, timedelta
 
 app = Flask(import_name=__name__)
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
+# cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 SWAGGER_URL = "/doc"
 API_URL = "/static/swagger.yml"
@@ -31,6 +31,7 @@ def get_counters(chainId: int) -> Response:
     if chain is None:
         return 'Chain not found', 400
     kb = KlerosBoardSubgraph(chain)
+    
     counters = kb.getKlerosCounters()
     return jsonify({"data": counters})
 
@@ -39,7 +40,7 @@ def get_history_active_jurors(chainId: int) -> Response:
     chain: str = chain_names.get(chainId, None)
     if chain is None:
         return 'Chain not found', 400
-    active_jurors: pd.DataFrame = getTimeSerieActiveJurors()
+    active_jurors: pd.DataFrame = getTimeSerieActiveJurors(chain=chain)
     return jsonify({"data": active_jurors.to_json()})
 
 
@@ -64,7 +65,7 @@ def get_history_transactions(chainId: int) -> Response:
         return 'Chain not found', 400
     freq: str = request.args.get(key='freq', default='M')
 
-    kb = KlerosBoardSubgraph(chain)
+    kb = KlerosBoardSubgraph(network=chain)
     txs: pd.DataFrame = kb.getAllTransactions()
     resampled_txs = txs.resample(freq, on='timestamp').count()
 
@@ -78,7 +79,7 @@ def get_history_fees(chainId: int) -> Response:
     freq: str = request.args.get(key='freq', default='M')
 
     # Get all paymens to jurors
-    kb = KlerosBoardSubgraph(chain)
+    kb = KlerosBoardSubgraph(network=chain)
     transfers = pd.DataFrame(kb.getAllTransfers())
     transfers['timestamp'] = pd.to_datetime(transfers.timestamp, unit='s')
     transfers.sort_values('timestamp', inplace=True)
@@ -106,7 +107,7 @@ def get_history_cases(chainId: int) -> Response:
         return 'Chain not found', 400
     freq: str = request.args.get(key='freq', default='M')
 
-    kb = KlerosBoardSubgraph(chain)
+    kb = KlerosBoardSubgraph(network=chain)
     df_disputes = pd.DataFrame(data=kb.getAllDisputes())
     df_disputes['startTime'] = pd.to_datetime(df_disputes['startTime'], unit='s')
     df_disputes.sort_values(by='startTime', ascending=True, inplace=True)
