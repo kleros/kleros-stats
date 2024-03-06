@@ -1,11 +1,58 @@
 from datetime import datetime
-from typing import List, Literal, Dict
+from typing import Union, List, Literal, Dict
 import pandas as pd
 import numpy as np
 
 from app.utils.subgraph import KlerosBoardSubgraph
 
 chain_names: Dict[int, str] = {1: "mainnet", 100: "gnosis"}
+
+# https://etherscan.io/advanced-filter?tkn=0x93ed3fbe21207ec2e8f2d3c3de6e058cb73bc04d&txntype=2&fadd=0x0000000000000000000000000000000000000000
+minting_events: List[Dict[str, Union[datetime, float]]] = [
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=53, second=7), 'amount': 80_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=53, second=59), 'amount': 40_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=54, second=28), 'amount': 20_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=55, second=39), 'amount': 10_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=55, second=39), 'amount': 15_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=56, second=26), 'amount': 5_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=56, second=56), 'amount': 5_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=57, second=14), 'amount': 3_000_000},
+    {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=58, second=32), 'amount': 2_000_000},
+    {'timestamp': datetime(year=2018, month=4, day=6, hour=14, minute=14, second=46), 'amount': 1_000_000},
+    {'timestamp': datetime(year=2018, month=5, day=9, hour=3, minute=39, second=30), 'amount': 15_000_000},
+    {'timestamp': datetime(year=2018, month=5, day=14, hour=4, minute=30, second=9), 'amount': 160_000_000},
+    {'timestamp': datetime(year=2018, month=5, day=18, hour=18, minute=15, second=6), 'amount': 5_000_000},
+    {'timestamp': datetime(year=2018, month=7, day=16, hour=17, minute=13, second=4), 'amount': 230_208},
+    {'timestamp': datetime(year=2018, month=7, day=16, hour=17, minute=20, second=29), 'amount': 3_110_000},
+    {'timestamp': datetime(year=2018, month=7, day=17, hour=17, minute=21, second=15), 'amount': 19_621},
+    {'timestamp': datetime(year=2018, month=7, day=28, hour=22, minute=46, second=54), 'amount': 256_875},
+    {'timestamp': datetime(year=2018, month=8, day=2, hour=20, minute=35, second=21), 'amount': 10_000},
+    {'timestamp': datetime(year=2018, month=11, day=12, hour=20, minute=28, second=12), 'amount': 10_000_000},
+    {'timestamp': datetime(year=2019, month=3, day=26, hour=17, minute=26, second=38), 'amount': 25_000_000},
+    {'timestamp': datetime(year=2020, month=1, day=10, hour=14, minute=21, second=0), 'amount': 150_000_000},
+    {'timestamp': datetime(year=2020, month=2, day=2, hour=14, minute=54, second=36), 'amount': 50_000_000},
+    {'timestamp': datetime(year=2020, month=6, day=10, hour=16, minute=2, second=31), 'amount': 200_000_000},
+    {'timestamp': datetime(year=2024, month=2, day=22, hour=13, minute=33, second=47), 'amount': 12_000_000},
+]
+
+# https://etherscan.io/advanced-filter?tkn=0x93ed3fbe21207ec2e8f2d3c3de6e058cb73bc04d&txntype=2&tadd=0x0000000000000000000000000000000000000000
+burning_events: List[Dict[str, Union[datetime, float]]] = [
+    {'timestamp': datetime(year=2018, month=5, day=6, hour=16, minute=10, second=34), 'amount': -15_000_000},
+    {'timestamp': datetime(year=2018, month=5, day=7, hour=22, minute=22, second=34), 'amount': -15_000_000},
+    {'timestamp': datetime(year=2018, month=5, day=18, hour=18, minute=13, second=59), 'amount': -5_000_000},
+]
+
+def getTotalSupplyTimeSerie(freq: Literal['D', 'W', 'M']) -> pd.DataFrame:
+    minting_events.extend(burning_events)
+    df = pd.DataFrame(data=minting_events)
+    df.sort_values(by='timestamp', ascending=True, inplace=True)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['total_supply'] = df['amount'].cumsum()
+    resampled: pd.DataFrame = df.resample(rule=freq, on='timestamp')['total_supply'].last()
+    start_date = resampled.index.min()
+    end_date = datetime.now()
+    t_index = pd.DatetimeIndex(pd.date_range(start=start_date, end=end_date, freq=freq))
+    return resampled.reindex(t_index).fillna(method='ffill')
 
 
 def getActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
@@ -103,7 +150,6 @@ def getTimeSeriePNKStakedFromStakes(df: pd.DataFrame, freq="M") -> pd.DataFrame:
             .last()
             .sum()
         )
-        # print(active_juros[-1])
 
     return pd.DataFrame(data={"total_staked": total_pnk}, index=dates)
 
@@ -136,14 +182,9 @@ def getTimeSeriePNKStakedPercentage(
            and percentege by time in frequency specified.
     """
     pnk_staked: pd.DataFrame = getTimeSeriePNKStaked(chain, freq)
-    # TODO: Check history of total supply.
-    pnk_staked["total_supply"] = 776626704
-    pnk_staked.loc[
-        pnk_staked.index < datetime(year=2024, month=1, day=20), "total_supply"
-    ] -= 12000000  # mint kip66
-    pnk_staked.loc[
-        pnk_staked.index < datetime(year=2019, month=12, day=30), "total_supply"
-    ] -= 200000000  # mint second token sale
+
+    total_supply = getTotalSupplyTimeSerie(freq=freq)
+    pnk_staked['total_supply'] = total_supply.reindex(pnk_staked.index).fillna(method='ffill')
 
     pnk_staked["percentage"] = pnk_staked["total_staked"] / pnk_staked["total_supply"]
     return pnk_staked
