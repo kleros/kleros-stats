@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import pandas as pd
 
-from utils.oracles import CoinGecko
-from utils.web3_node import web3Node
+from app.utils.oracles import CoinGecko
+from app.utils.web3_node import web3Node
 
 try:
     ipfs_node: str = os.getenv['IPFS_NODE']

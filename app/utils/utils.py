@@ -3,7 +3,7 @@ from typing import List, Literal, Dict
 import pandas as pd
 import numpy as np
 
-from utils.subgraph import KlerosBoardSubgraph
+from app.utils.subgraph import KlerosBoardSubgraph
 
 chain_names: Dict[int, str] = {1: "mainnet", 100: "gnosis"}
 

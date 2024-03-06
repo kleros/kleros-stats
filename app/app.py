@@ -2,9 +2,9 @@ from flask import Flask, jsonify, request, Response
 from flask_swagger_ui import get_swaggerui_blueprint
 import pandas as pd
 
-from utils.subgraph import KlerosBoardSubgraph
-from utils.utils import getTimeSerieActiveJurors, chain_names, getTimeSeriePNKStakedPercentage
-from utils.oracles import CoinGecko
+from app.utils.subgraph import KlerosBoardSubgraph
+from app.utils.utils import getTimeSerieActiveJurors, chain_names, getTimeSeriePNKStakedPercentage
+from app.utils.oracles import CoinGecko
 from datetime import datetime, timedelta
 
 app = Flask(import_name=__name__)
