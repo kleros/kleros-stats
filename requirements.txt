@@ -7,3 +7,4 @@ nbformat>=4.2.0
 Flask==2.3.2
 flask-swagger-ui==4.11.1
 urllib3==1.26.6
+Flask-Cors==4.0.0

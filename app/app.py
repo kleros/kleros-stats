@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, Response
+from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 import pandas as pd
 
@@ -8,6 +9,8 @@ from app.utils.oracles import CoinGecko
 from datetime import datetime, timedelta
 
 app = Flask(import_name=__name__)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
 SWAGGER_URL = "/doc"
 API_URL = "/static/swagger.yml"
 
