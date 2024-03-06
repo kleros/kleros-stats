@@ -9,7 +9,7 @@ from app.utils.oracles import CoinGecko
 from datetime import datetime, timedelta
 
 app = Flask(import_name=__name__)
-# cors = CORS(app, resources={r"/*": {"origins": "*"}})
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 SWAGGER_URL = "/doc"
 API_URL = "/static/swagger.yml"
