@@ -60,23 +60,23 @@ paths:
                     type: number
                   votingPhaseDisputes:
                     type: integer
-            examples:
-              data:
-                activeJurors: 118
-                appealPhaseDisputes: 1
-                closedDisputes: 236
-                courtsCount: 18
-                disputesCount: 240
-                drawnJurors: 104
-                evidencePhaseDisputes: 0
-                inactiveJurors: 97
-                numberOfArbitrables: 26
-                openDisputes: 4
-                tokenStaked: 30415117.504536077
-                totalETHFees: 24182.100000000002
-                totalTokenRedistributed: 467571.39923521696
-                totalUSDthroughContract: 0
-                votingPhaseDisputes: 3
+                examples:
+                  data:
+                    activeJurors: 118
+                    appealPhaseDisputes: 1
+                    closedDisputes: 236
+                    courtsCount: 18
+                    disputesCount: 240
+                    drawnJurors: 104
+                    evidencePhaseDisputes: 0
+                    inactiveJurors: 97
+                    numberOfArbitrables: 26
+                    openDisputes: 4
+                    tokenStaked: 30415117.504536077
+                    totalETHFees: 24182.100000000002
+                    totalTokenRedistributed: 467571.39923521696
+                    totalUSDthroughContract: 0
+                    votingPhaseDisputes: 3
         '404':
           description: Chain not found   
   /history/active-jurors/{chainId}:
