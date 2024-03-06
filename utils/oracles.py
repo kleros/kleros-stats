@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 import requests
 import urllib
 import os
@@ -73,7 +73,7 @@ class CoinGecko():
         response = requests.get(url, headers=headers)
         return response.json()
 
-    def _getCryptoOldPrice(self, date, id="kleros", vs_currency='usd') -> float | None:
+    def _getCryptoOldPrice(self, date, id="kleros", vs_currency='usd') -> float or None: # type: ignore
         parameters = {'localization': False,
                       'vs_currency': vs_currency,
                       'date': date}
@@ -134,13 +134,13 @@ class CoinGecko():
         response = self._getCryptoHistoric(id='kleros', days=days_before)
         return response['prices']
 
-    def getETHoldPrice(self, timestamp) -> float | None:
+    def getETHoldPrice(self, timestamp) -> Union[float, None]:
         """get the price of ETH at some specific timestamp (unit s)"""
         date = datetime.fromtimestamp(timestamp)
         return self._getCryptoOldPrice(date.strftime('%d-%m-%Y'),
                                        id='ethereum')
 
-    def getPNKoldPrice(self, timestamp) -> float | None:
+    def getPNKoldPrice(self, timestamp) -> Union[float, None]:
         """get the price of PNK at some specific timestamp (unit s)"""
         date = datetime.fromtimestamp(timestamp)
         return self._getCryptoOldPrice(date.strftime('%d-%m-%Y'))

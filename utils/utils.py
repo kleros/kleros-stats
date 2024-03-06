@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Literal
+from typing import List, Literal, Dict
 import pandas as pd
 import numpy as np
 
 from utils.subgraph import KlerosBoardSubgraph
 
-chain_names: dict[int, str] = {1: "mainnet", 100: "gnosis"}
+chain_names: Dict[int, str] = {1: "mainnet", 100: "gnosis"}
 
 
 def getActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
@@ -46,7 +46,7 @@ def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
         freq="D",
     )
 
-    active_juros = []
+    active_juros: List = []
     for i, date in enumerate(daily_dates):
         # get the last newTotalStake by address and count only those who are > 0.
         # print(date)
@@ -68,7 +68,7 @@ def getTimeSerieActiveJurors(
 ) -> pd.DataFrame:
     """Get the time serie of active jurors count"""
     kb = KlerosBoardSubgraph(network=chain)
-    stakes = kb.getAllStakeSets()
+    stakes: List = kb.getAllStakeSets()
     df_stakes = pd.DataFrame(stakes)
     active_jurors: pd.DataFrame = getTimeSerieActiveJurorsFromStakes(df_stakes)
     return active_jurors
