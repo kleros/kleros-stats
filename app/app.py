@@ -4,7 +4,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 import pandas as pd
 
 from app.utils.subgraph import KlerosBoardSubgraph
-from app.utils.utils import getTimeSerieActiveJurors, chain_names, getTimeSeriePNKStakedPercentage
+from app.utils.utils import getHistoryFees, getTimeSerieActiveJurors, chain_names, getTimeSeriePNKStakedPercentage
 from app.utils.oracles import CoinGecko
 from datetime import datetime, timedelta
 
@@ -78,30 +78,8 @@ def get_history_fees(chainId: int) -> Response:
         return 'Chain not found', 400
     freq: str = request.args.get(key='freq', default='M')
 
-    # Get all paymens to jurors
-    kb = KlerosBoardSubgraph(network=chain)
-    transfers = pd.DataFrame(kb.getAllTransfers())
-    transfers['timestamp'] = pd.to_datetime(transfers.timestamp, unit='s')
-    transfers.sort_values('timestamp', inplace=True)
-    if chainId == 1:
-        # get ETH price
-        days_before = (datetime.now() - transfers.timestamp.min()).days
-        eth_price = CoinGecko().getETHhistoricPrice(days_before)
-        eth_price = pd.DataFrame(eth_price, columns=['timestamp', 'price'])
-        eth_price['timestamp'] = pd.to_datetime(eth_price['timestamp'], unit='ms')
-        transfers_eth_price = pd.merge_asof(
-            left=transfers, right=eth_price,
-            on='timestamp', direction='forward', tolerance=timedelta(hours=23)
-        )
-        transfers_eth_price['ETHAmount_usd'] = transfers_eth_price['ETHAmount'] * transfers_eth_price['price']
-    else:
-        # xDAI is already in USD.
-        transfers_eth_price = transfers
-        transfers_eth_price['ETHAmount_usd'] = transfers_eth_price['ETHAmount']
-    if freq != 'D':
-        transfers_eth_price = transfers_eth_price.resample('M', on='timestamp')['ETHAmount_usd', 'ETHAmount'].sum()
-
-    return jsonify({"data": transfers_eth_price.to_json()})
+    df: pd.DataFrame = getHistoryFees(chain, freq)
+    return jsonify({"data": df.to_json()})
 
 
 @app.route("/history/cases/<int:chainId>", methods=["GET"])
