@@ -219,21 +219,22 @@ def getHistoryFees(chain: Literal['mainnet', 'gnosis'], freq: Literal['D', 'W', 
     transfers = pd.DataFrame(kb.getAllTransfers())
     transfers['timestamp'] = pd.to_datetime(transfers.timestamp, unit='s')
     transfers.sort_values('timestamp', inplace=True)
+    transfers = transfers.resample(rule='D', on='timestamp')['ETHAmount'].sum()
     if chain == 'mainnet':
         # get ETH price
-        days_before = (datetime.now() - transfers.timestamp.min()).days
+        days_before = (datetime.now() - transfers.index.min()).days
         eth_price = CoinGecko().getETHhistoricPrice(days_before)
         eth_price = pd.DataFrame(eth_price, columns=['timestamp', 'price'])
         eth_price['timestamp'] = pd.to_datetime(eth_price['timestamp'], unit='ms')
         transfers_eth_price = pd.merge_asof(
             left=transfers, right=eth_price,
-            on='timestamp', direction='forward', tolerance=timedelta(hours=23)
+            left_index=True, right_on='timestamp',
+            direction='forward', tolerance=timedelta(hours=23)
         )
         transfers_eth_price['ETHAmount_usd'] = transfers_eth_price['ETHAmount'] * transfers_eth_price['price']
     elif chain == 'gnosis':
         # xDAI is already in USD.
-        transfers_eth_price = transfers
+        transfers_eth_price = pd.DataFrame(transfers)
         transfers_eth_price['ETHAmount_usd'] = transfers_eth_price['ETHAmount']
-    if freq != 'D':
-        transfers_eth_price = transfers_eth_price.resample(rule=freq, on='timestamp')['ETHAmount_usd', 'ETHAmount'].sum()
+    transfers_eth_price = transfers_eth_price.resample(rule=freq)['ETHAmount_usd', 'ETHAmount'].sum()
     return transfers_eth_price
