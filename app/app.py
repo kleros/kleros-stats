@@ -5,8 +5,6 @@ import pandas as pd
 
 from app.utils.subgraph import KlerosBoardSubgraph
 from app.utils.utils import getHistoryFees, getTimeSerieActiveJurors, chain_names, getTimeSeriePNKStakedPercentage
-from app.utils.oracles import CoinGecko
-from datetime import datetime, timedelta
 
 app = Flask(import_name=__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
