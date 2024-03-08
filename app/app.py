@@ -38,7 +38,8 @@ def get_history_active_jurors(chainId: int) -> Response:
     chain: str = chain_names.get(chainId, None)
     if chain is None:
         return 'Chain not found', 400
-    active_jurors: pd.DataFrame = getTimeSerieActiveJurors(chain=chain)
+    freq: str = request.args.get(key='freq', default='M')
+    active_jurors: pd.DataFrame = getTimeSerieActiveJurors(chain=chain, freq=freq)
     return jsonify({"data": active_jurors.to_json()})
 
 
@@ -49,7 +50,7 @@ def get_history_growth_active_jurors(chainId: int) -> Response:
         return 'Chain not found', 400
     freq: str = request.args.get(key='freq', default='M')
 
-    active_jurors: pd.DataFrame = getTimeSerieActiveJurors(chain=chain)
+    active_jurors: pd.DataFrame = getTimeSerieActiveJurors(chain=chain, freq=freq)
     growth: pd.DataFrame = active_jurors.diff()
     growth = growth.resample(freq).sum()
 

@@ -74,7 +74,7 @@ def getActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
     return active_jurors
 
 
-def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
+def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame, freq:Literal['D', 'W', 'M']='M') -> pd.DataFrame:
     """from the setSakes dataframe (subgraph.getAllStakeSets()) add a column
     with the count of active jurors.
 
@@ -88,14 +88,14 @@ def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
     start_timestamp = df["timestamp"].min().replace(hour=0, second=0, minute=0)
     end_timestamp = df["timestamp"].max().replace(hour=0, second=0, minute=0)
 
-    daily_dates: pd.DatetimeIndex = pd.date_range(
+    dates: pd.DatetimeIndex = pd.date_range(
         start=start_timestamp,
         end=end_timestamp,
-        freq="D",
+        freq=freq,
     )
 
     active_juros: List = []
-    for i, date in enumerate(daily_dates):
+    for i, date in enumerate(dates):
         # get the last newTotalStake by address and count only those who are > 0.
         # print(date)
         # print(df.loc[df["timestamp"] < date][['address', 'newTotalStake']])
@@ -108,7 +108,7 @@ def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
             .sum(axis=0)
         )
         # print(active_juros[-1])
-    return pd.DataFrame(data={"active_jurors": active_juros}, index=daily_dates)
+    return pd.DataFrame(data={"active_jurors": active_juros}, index=dates)
 
 
 def getTimeSerieActiveJurors(
@@ -118,7 +118,7 @@ def getTimeSerieActiveJurors(
     kb = KlerosBoardSubgraph(network=chain)
     stakes: List = kb.getAllStakeSets()
     df_stakes = pd.DataFrame(stakes)
-    active_jurors: pd.DataFrame = getTimeSerieActiveJurorsFromStakes(df_stakes)
+    active_jurors: pd.DataFrame = getTimeSerieActiveJurorsFromStakes(df=df_stakes, freq=freq)
     return active_jurors
 
 
