@@ -49,7 +49,7 @@ def getTotalSupplyTimeSerie(freq: Literal['D', 'W', 'M']) -> pd.DataFrame:
     df.sort_values(by='timestamp', ascending=True, inplace=True)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['total_supply'] = df['amount'].cumsum()
-    resampled: pd.DataFrame = df.resample(rule=freq, on='timestamp')['total_supply'].last()
+    resampled: pd.DataFrame = df.resample(rule=freq, on='timestamp')['total_supply'].last().fillna(method='ffill')
     start_date = resampled.index.min()
     end_date = datetime.now()
     t_index = pd.DatetimeIndex(pd.date_range(start=start_date, end=end_date, freq=freq))
