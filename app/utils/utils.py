@@ -44,8 +44,8 @@ burning_events: List[Dict[str, Union[datetime, float]]] = [
 ]
 
 def getTotalSupplyTimeSerie(freq: Literal['D', 'W', 'M']) -> pd.DataFrame:
-    minting_events.extend(burning_events)
-    df = pd.DataFrame(data=minting_events)
+    events: List[Dict[str, Union[datetime, float]]] = minting_events + burning_events
+    df = pd.DataFrame(data=events)
     df.sort_values(by='timestamp', ascending=True, inplace=True)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['total_supply'] = df['amount'].cumsum()
