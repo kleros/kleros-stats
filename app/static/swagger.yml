@@ -1,0 +1,319 @@
+swagger: '2.0'
+info:
+  title: Kleros Stats
+  description: Endpoint to retrieve stats values from Kleros using the Klerosboard subgraph.
+  version: '1.0'
+basePath: /
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /counters/{chainId}:
+    get:
+      summary: Retrieve counters data
+      parameters:
+        - name: chainId
+          in: path
+          description: ID of the chain
+          required: true
+          type: integer
+          enum: [1, 100]
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  activeJurors:
+                    type: integer
+                  appealPhaseDisputes:
+                    type: integer
+                  closedDisputes:
+                    type: integer
+                  courtsCount:
+                    type: integer
+                  disputesCount:
+                    type: integer
+                  drawnJurors:
+                    type: integer
+                  evidencePhaseDisputes:
+                    type: integer
+                  inactiveJurors:
+                    type: integer
+                  numberOfArbitrables:
+                    type: integer
+                  openDisputes:
+                    type: integer
+                  tokenStaked:
+                    type: number
+                  totalETHFees:
+                    type: number
+                  totalTokenRedistributed:
+                    type: number
+                  totalUSDthroughContract:
+                    type: number
+                  votingPhaseDisputes:
+                    type: integer
+                examples:
+                  data:
+                    activeJurors: 118
+                    appealPhaseDisputes: 1
+                    closedDisputes: 236
+                    courtsCount: 18
+                    disputesCount: 240
+                    drawnJurors: 104
+                    evidencePhaseDisputes: 0
+                    inactiveJurors: 97
+                    numberOfArbitrables: 26
+                    openDisputes: 4
+                    tokenStaked: 30415117.504536077
+                    totalETHFees: 24182.100000000002
+                    totalTokenRedistributed: 467571.39923521696
+                    totalUSDthroughContract: 0
+                    votingPhaseDisputes: 3
+        '404':
+          description: Chain not found   
+  /history/active-jurors/{chainId}:
+    get:
+      summary: Retrieve history of active jurors KPI
+      parameters:
+        - name: chainId
+          in: path
+          description: ID of the chain
+          required: true
+          type: integer
+          enum: [1, 100]
+        - name: freq
+          in: query
+          description: "Frequency of data (D: daily, W: weekly, M: monthly)"
+          required: false
+          type: string
+          enum: [D, W, M]
+          default: M
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                additionalProperties:
+                  type: integer
+                example:
+                  active_jurors:
+                    "1625529600000": 0
+                    "1625616000000": 4
+                    "1625702400000": 9
+                    "1625788800000": 12
+        '404':
+          description: Chain not found
+  /history/growth-active-jurors/{chainId}:
+    get:
+      summary: Retrieve history of growth of active jurors KPI
+      parameters:
+        - name: chainId
+          in: path
+          description: ID of the chain
+          required: true
+          type: integer
+          enum: [1, 100]
+        - name: freq
+          in: query
+          description: "Frequency of data (D: daily, W: weekly, M: monthly)"
+          required: false
+          type: string
+          enum: [D, W, M]
+          default: M
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                additionalProperties:
+                  type: integer
+                example:
+                  active_jurors:
+                    "1625529600000": 0
+                    "1625616000000": 4
+                    "1625702400000": 9
+                    "1625788800000": 12
+        '404':
+          description: Chain not found
+  /history/transactions/{chainId}:
+    get:
+      summary: Retrieve non-exhaustive history of amount of transactions in Kleros Courts
+      parameters:
+        - name: chainId
+          in: path
+          description: ID of the chain
+          required: true
+          type: integer
+          enum: [1, 100]
+        - name: freq
+          in: query
+          description: "Frequency of data (D: daily, W: weekly, M: monthly)"
+          required: false
+          type: string
+          enum: [D, W, M]
+          default: M
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                additionalProperties:
+                  type: integer
+                example: 
+                  tx:
+                    "1625529600000": 0
+                    "1625616000000": 4
+                    "1625702400000": 9
+                    "1625788800000": 12
+        '404':
+          description: Chain not found
+  /history/fees/{chainId}:
+    get:
+      summary: Retrieve history of fees
+      parameters:
+        - name: chainId
+          in: path
+          description: ID of the chain
+          required: true
+          type: integer
+          enum: [1, 100]
+        - name: freq
+          in: query
+          description: "Frequency of data (D: daily, W: weekly, M: monthly)"
+          required: false
+          type: string
+          enum: [D, W, M]
+          default: M
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  ETHAmount:
+                    type: object
+                    additionalProperties:
+                      type: number
+                  ETHAmount_usd:
+                    type: object
+                    additionalProperties:
+                      type: number
+                example:
+                    ETHAmount_usd:
+                      "1553990400000": 633.4832919316
+                      "1556582400000": 4881.4957982549
+                      "1559260800000": 7661.4547344111
+                    ETHAmount:
+                      "1553990400000": 4.5888437103
+                      "1556582400000": 29.535
+                      "1559260800000": 38.78
+        '404':
+          description: Chain not found
+  /history/cases/{chainId}:
+    get:
+      summary: Retrieve history of amount of cases raised in the Kleros Courts
+      parameters:
+        - name: chainId
+          in: path
+          description: ID of the chain
+          required: true
+          type: integer
+          enum: [1, 100]
+        - name: freq
+          in: query
+          description: "Frequency of data (D: daily, W: weekly, M: monthly)"
+          required: false
+          type: string
+          enum: [D, W, M]
+          default: M
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                additionalProperties:
+                  type: integer
+                example: 
+                  cases:
+                    "1625529600000": 0
+                    "1625616000000": 4
+                    "1625702400000": 9
+                    "1625788800000": 12
+        '404':
+          description: Chain not found
+  /history/staked-percentage/{chainId}:
+    get:
+      summary: Retrieve history of PNK staked wrt to Total Supply
+      parameters:
+        - name: chainId
+          in: path
+          description: ID of the chain
+          required: true
+          type: integer
+          enum: [1, 100]
+        - name: freq
+          in: query
+          description: "Frequency of data (D: daily, W: weekly, M: monthly)"
+          required: false
+          type: string
+          enum: [D, W, M]
+          default: M
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  total_staked:
+                    type: object
+                    additionalProperties:
+                      type: number
+                  total_supply:
+                    type: object
+                    additionalProperties:
+                      type: number
+                  percentage:
+                    type: object
+                    additionalProperties:
+                      type: number
+                example:
+                    total_staked:
+                      "1627689600000": 2189880.8153624181
+                      "1630368000000": 6362821.6030562399
+                      "1632960000000": 10898868.0566836745
+                    total_supply:
+                      "1627689600000": 764626704
+                      "1630368000000": 764626704
+                      "1632960000000": 764626704
+                    percentage:
+                      "1627689600000": 0.0028639868
+                      "1630368000000": 0.0083214745
+                      "1632960000000": 0.0142538418
+        '404':
+          description: Chain not found

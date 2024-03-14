@@ -1,14 +1,14 @@
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal, Union
 import requests
 import os
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from collections import defaultdict
 import pandas as pd
 
-from utils.oracles import CoinGecko
-from utils.web3_node import web3Node
+from app.utils.oracles import CoinGecko
+from app.utils.web3_node import web3Node
 
 try:
     ipfs_node: str = os.getenv['IPFS_NODE']
@@ -25,7 +25,7 @@ class Subgraph():
 
     def _post_query(self, query):
         response: requests.Response = requests.post(self.subgraph_node, json={'query': query})
-        data: TypeJSON = response.json()
+        data = response.json()
         try:
             data = data['data']
         except KeyError:
@@ -89,9 +89,9 @@ class KlerosBoardSubgraph(Subgraph):
 
         # Node definitions
         if self.network == 'gnosis':
-            self.subgraph_name = 'salgozino/klerosboard-xdai'
+            self.subgraph_name = 'klerosboard/klerosboard-gnosis'
         else:
-            self.subgraph_name = 'salgozino/klerosboard'
+            self.subgraph_name = 'klerosboard/klerosboard-mainnet'
         self.subgraph_node += self.subgraph_name
 
     @staticmethod
@@ -120,7 +120,7 @@ class KlerosBoardSubgraph(Subgraph):
         return int(currentBlockNumber - days * 24 * 60 * 60 / averageBlockTime)
 
     @staticmethod
-    def _getOldPrice(timestamp, network='mainnet'):
+    def _getOldPrice(timestamp, network='mainnet') -> Dict:
         pnk_price = CoinGecko().getPNKoldPrice(timestamp)
         if 'gnosis' in network:
             return {'reward_currency': 1., 'token': pnk_price}
@@ -164,7 +164,7 @@ class KlerosBoardSubgraph(Subgraph):
     def _getRoundNumFromID(roundID) -> int:
         return int(roundID.split('-')[1])
 
-    def _getTotalUSDGasCostInVotes(self, votes) -> float | Any:
+    def _getTotalUSDGasCostInVotes(self, votes) -> float:
         if len(votes) == 0:
             return 0.0
         df_votes = pd.DataFrame(votes)
@@ -193,13 +193,13 @@ class KlerosBoardSubgraph(Subgraph):
             df = pd.concat([df_votes, df_price], axis=1)
             df.dropna(axis=0, how='any', inplace=True)
             df['usd_amount'] = df['totalGasCost'] * df['eth_price']
-            eth_amount = df['usd_amount'].sum()
+            eth_amount: float = df['usd_amount'].sum()
         else:
             eth_price = CoinGecko().getETHoldPrice(oldest_timestamp)
-            eth_amount = df_votes.values[0] * eth_price
+            eth_amount: float = df_votes.values[0] * eth_price
         return eth_amount
 
-    def _getTotalUSDThroughTransfers(self, transfers):
+    def _getTotalUSDThroughTransfers(self, transfers) -> float:
         if len(transfers) == 0:
             return 0.0
         df_transfers = pd.DataFrame(transfers)
@@ -227,7 +227,7 @@ class KlerosBoardSubgraph(Subgraph):
                           ).to_list()[0]
         return usd_amount
 
-    def _parseArbitrable(self, arbitrable):
+    def _parseArbitrable(self, arbitrable) -> Dict:
         if arbitrable is None:
             return None
         keys = arbitrable.keys()
@@ -240,7 +240,7 @@ class KlerosBoardSubgraph(Subgraph):
                                       for dispute in arbitrable['disputes']]
         return arbitrable
 
-    def _parseCourt(self, court):
+    def _parseCourt(self, court) -> Dict:
         # get a query of a courts and parse values to the correct format
         if court is None:
             return None
@@ -289,7 +289,7 @@ class KlerosBoardSubgraph(Subgraph):
             court['childs'] = childs
         return court
 
-    def _parseCourtStake(self, courtStake):
+    def _parseCourtStake(self, courtStake) -> Dict:
         keys = courtStake.keys()
         if 'stake' in keys:
             courtStake['stake'] = self._wei2eth(courtStake['stake'])
@@ -304,7 +304,7 @@ class KlerosBoardSubgraph(Subgraph):
                 courtStake['timestamp'])
         return courtStake
 
-    def _parseDispute(self, dispute, timePeriods=None):
+    def _parseDispute(self, dispute, timePeriods=None) -> Dict:
         # get a query response from one dispute and return parsed the votes
         # and values in the correct format. if the timePeriods of a court are
         # inputed, it's used to get the timePeriodEnds without need to request
@@ -367,7 +367,7 @@ class KlerosBoardSubgraph(Subgraph):
             dispute['unique_jurors'] = unique_jurors
         return dispute
 
-    def _parseKlerosCounters(self, kc):
+    def _parseKlerosCounters(self, kc) -> Dict:
         float_fields = ['tokenStaked', 'totalETHFees',
                         'totalTokenRedistributed']
         for key, value in kc.items():
@@ -377,7 +377,7 @@ class KlerosBoardSubgraph(Subgraph):
                 kc[key] = int(value)
         return kc
 
-    def _parseProfile(self, profile):
+    def _parseProfile(self, profile) -> Dict:
         keys = profile.keys()
         if 'numberOfDisputesAsJuror' in keys:
             profile['numberOfDisputesAsJuror'] = int(profile[
@@ -437,7 +437,7 @@ class KlerosBoardSubgraph(Subgraph):
             profile['tokenRewards'] = 0
         return profile
 
-    def _parseStakeSet(self, stake_set):
+    def _parseStakeSet(self, stake_set) -> Dict:
         keys = stake_set.keys()
         if 'subcourtID' in keys:
             stake_set['subcourtID'] = int(stake_set['subcourtID'])
@@ -456,7 +456,7 @@ class KlerosBoardSubgraph(Subgraph):
             stake_set['gasCost'] = self._wei2eth(stake_set['gasCost'])
         return stake_set
 
-    def _parseTransfer(self, transfer):
+    def _parseTransfer(self, transfer) -> Dict:
         keys = transfer.keys()
         if 'ETHAmount' in keys:
             transfer['ETHAmount'] = self._wei2eth(transfer['ETHAmount'])
@@ -468,7 +468,7 @@ class KlerosBoardSubgraph(Subgraph):
             transfer['blocknumber'] = int(transfer['blocknumber'])
         return transfer
 
-    def _parseVote(self, vote, number_of_choices=None):
+    def _parseVote(self, vote, number_of_choices=None) -> Dict:
         keys = vote.keys()
         if 'address' in keys:
             vote['address'] = vote['address']['id']
@@ -509,7 +509,7 @@ class KlerosBoardSubgraph(Subgraph):
                     'round']['id'])
         return vote
 
-    def _parseDraw(self, draw):
+    def _parseDraw(self, draw) -> Dict:
         keys = draw.keys()
         if 'timestamp' in keys:
             try:
@@ -525,8 +525,8 @@ class KlerosBoardSubgraph(Subgraph):
         return draw
 
     @staticmethod
-    def _period2number(period):
-        period_map = {
+    def _period2number(period) -> int:
+        period_map: Dict[str, int] = {
             'execution': 4,
             'appeal': 3,
             'vote': 2,
@@ -535,7 +535,7 @@ class KlerosBoardSubgraph(Subgraph):
         return period_map[period]
 
     @staticmethod
-    def _vote_mapping(choice, voted, dispute=None, number_of_choices=2):
+    def _vote_mapping(choice, voted, dispute=None, number_of_choices=2) -> str:
         """
         Return the text of the vote choice.
         TODO!, use the metaEvidence of the dispute,
@@ -558,7 +558,7 @@ class KlerosBoardSubgraph(Subgraph):
         else:
             return 'Pending'
 
-    def court2table(self, court, pnkUSDPrice, rewardUSDPrice):
+    def court2table(self, court, pnkUSDPrice, rewardUSDPrice) -> Dict:
         """
         Fields of the Table used in the main view of klerosboard
         """
@@ -575,7 +575,7 @@ class KlerosBoardSubgraph(Subgraph):
                 'Name': self.getCourtName(court['subcourtID'])
                 }
 
-    def getActiveJurorsFromCourt(self, courtID):
+    def getActiveJurorsFromCourt(self, courtID) -> List[Dict]:
         query = (
             '{'
             'courtStakes(where:{court:"' + str(courtID) + '",stake_gt:0}, '
@@ -592,7 +592,7 @@ class KlerosBoardSubgraph(Subgraph):
             courtStakes = result['courtStakes']
             return [self._parseCourtStake(cs) for cs in courtStakes]
 
-    def getAdoption(self):
+    def getAdoption(self) -> int:
         "return the number of new jurors in the last 30 days"
         query = (
             '{klerosCounters{'
@@ -623,7 +623,7 @@ class KlerosBoardSubgraph(Subgraph):
             'inactiveJurors'])
         return newTotal - oldTotal
 
-    def getAllArbitrables(self):
+    def getAllArbitrables(self) -> List[Dict]:
         initArbitrable = ""
         arbitrables = []
         while True:
@@ -645,7 +645,7 @@ class KlerosBoardSubgraph(Subgraph):
         return [self._parseArbitrable(arbitrable)
                 for arbitrable in arbitrables]
 
-    def getAllCourts(self):
+    def getAllCourts(self) -> List:
         query = (
             '''{
             courts{
@@ -676,7 +676,7 @@ class KlerosBoardSubgraph(Subgraph):
                 courts.append(self._parseCourt(court))
             return courts
 
-    def getAllCourtsDaysBefore(self, days=30):
+    def getAllCourtsDaysBefore(self, days=30) -> Union[None, Dict]:
         blockNumber = self._getBlockNumberbefore(days)
         query = (
             '{courts(block:{number:' + str(blockNumber) + '}){'
@@ -706,7 +706,7 @@ class KlerosBoardSubgraph(Subgraph):
         else:
             return result['courts']
 
-    def getAllCourtDisputes(self, courtID):
+    def getAllCourtDisputes(self, courtID) -> List[Dict]:
         initDispute = -1
         disputes = []
         while True:
@@ -735,7 +735,7 @@ class KlerosBoardSubgraph(Subgraph):
             parsed_disputes.append(self._parseDispute(dispute))
         return parsed_disputes
 
-    def getAllDraws(self):
+    def getAllDraws(self) -> List[Dict]:
         initTimestamp = 0
         draws = []
         while True:
@@ -753,7 +753,7 @@ class KlerosBoardSubgraph(Subgraph):
             initTimestamp = result['draws'][-1]['timestamp']
         return [self._parseDraw(draw) for draw in draws]
 
-    def getAllDisputes(self):
+    def getAllDisputes(self) -> List[Dict]:
         initDispute = -1
         disputes = []
         while True:
@@ -782,7 +782,7 @@ class KlerosBoardSubgraph(Subgraph):
                                                           subcourtID]))
         return parsed_disputes
 
-    def getAllOpenDisputes(self):
+    def getAllOpenDisputes(self) -> List[Dict]:
         initDispute = -1
         disputes = []
         while True:
@@ -812,7 +812,7 @@ class KlerosBoardSubgraph(Subgraph):
                                                           subcourtID]))
         return parsed_disputes
 
-    def getAllStakeSets(self):
+    def getAllStakeSets(self) -> List[Dict]:
         initStakes = ""
         stakes = []
         while True:
@@ -834,7 +834,7 @@ class KlerosBoardSubgraph(Subgraph):
         return [self._parseStakeSet(stake)
                 for stake in stakes]
 
-    def getAllTransfers(self):
+    def getAllTransfers(self) -> List[Dict]:
         initTimestamp = 0
         transfers = []
         while True:
@@ -857,7 +857,7 @@ class KlerosBoardSubgraph(Subgraph):
         return [self._parseTransfer(transfer)
                 for transfer in transfers]
 
-    def getAllVotes(self):
+    def getAllVotes(self) -> List[Dict]:
         initTimestamp = 0
         votes = []
         while True:
@@ -877,7 +877,7 @@ class KlerosBoardSubgraph(Subgraph):
         return [self._parseVote(vote, vote['dispute']['numberOfChoices'])
                 for vote in votes]
 
-    def getAllVotesFromJuror(self, address):
+    def getAllVotesFromJuror(self, address) -> List[Dict]:
         query = ('{votes(where:{address:"'
                  + str(address) + '"},first:1000){'
                  'dispute{id,currentRulling,ruled,startTime,numberOfChoices},'
@@ -892,7 +892,7 @@ class KlerosBoardSubgraph(Subgraph):
         return [self._parseVote(vote, vote['dispute']['numberOfChoices'])
                 for vote in votes]
     
-    def getAllJurors(self):
+    def getAllJurors(self) -> List[Dict]:
         skipJurors = 0
         profiles = []
         while True:
@@ -912,7 +912,7 @@ class KlerosBoardSubgraph(Subgraph):
         parsed_disputes = [self._parseProfile(profile) for profile in profiles]
         return parsed_disputes
 
-    def getArbitrable(self, address):
+    def getArbitrable(self, address) -> Union[List, None]:
         query = (
             '{arbitrables(where:{id:"' + str(address).lower() + '"}) {'
             '   id,'
@@ -933,12 +933,12 @@ class KlerosBoardSubgraph(Subgraph):
             return result
         return self._parseArbitrable(result['arbitrables'][0])
 
-    def getArbitrableName(self, arbitrable):
+    def getArbitrableName(self, arbitrable) -> str:
         if self.network == 'test2':
             file_path = 'app/lib/dapp_index_mainnet.json'
         else:
             file_path = f'app/lib/dapp_index_{self.network}.json'
-        arbitrable = str(arbitrable).lower()
+        arbitrable: str = str(arbitrable).lower()
         if os.path.isfile(file_path):
             with open(file_path) as jsonFile:
                 dapp_index = json.load(jsonFile)
@@ -948,7 +948,7 @@ class KlerosBoardSubgraph(Subgraph):
                             return dapp_index[arbitrable]['Dapp name']
         return arbitrable
 
-    def getCourt(self, courtID):
+    def getCourt(self, courtID) -> Union[Dict, None]:
         query = (
             '{'
             'courts(where:{id:"' + str(courtID) + '"}) {'
@@ -980,7 +980,7 @@ class KlerosBoardSubgraph(Subgraph):
             court = result['courts'][0]
             return self._parseCourt(court)
 
-    def getCourtChildrens(self, courtID):
+    def getCourtChildrens(self, courtID) -> set:
         childrens = set()
         search_courts = set([str(courtID)])
         while len(search_courts) > 0:
@@ -997,7 +997,7 @@ class KlerosBoardSubgraph(Subgraph):
                     search_courts.add(child['id'])
         return childrens
 
-    def getCourtDaysBefore(self, courtID, days=30):
+    def getCourtDaysBefore(self, courtID, days=30) -> Union[Dict, None]:
         blockNumber = self._getBlockNumberbefore(days)
         query = (
             '{courts(block:{number:'
@@ -1027,7 +1027,7 @@ class KlerosBoardSubgraph(Subgraph):
         else:
             return self._parseCourt(result['courts'][0])
 
-    def getCourtDisputesNumber(self):
+    def getCourtDisputesNumber(self) -> Union[List[Dict], None]:
         query = (
             '{courts{'
             '   disputesNum'
@@ -1045,7 +1045,7 @@ class KlerosBoardSubgraph(Subgraph):
                 courts.append(self._parseCourt(court))
             return courts
 
-    def getCourtList(self):
+    def getCourtList(self) -> List[Dict]:
         query = (
             '''{
             courts{
@@ -1058,7 +1058,7 @@ class KlerosBoardSubgraph(Subgraph):
         else:
             return [self._parseCourt(court) for court in result['courts']]
 
-    def getCourtPolicy(self, courtID):
+    def getCourtPolicy(self, courtID) ->  Union[Dict, None]:
         policy = self.readPolicy(courtID)
         if policy is None:
             return None
@@ -1069,7 +1069,7 @@ class KlerosBoardSubgraph(Subgraph):
             response = requests.get(ipfs_node + policy['policy'])
         return response.json()
 
-    def getCourtTable(self):
+    def getCourtTable(self) -> Dict:
         courtsInfo = {}
         oldcourtsDisputes = {}
         courts = self.getAllCourts()
@@ -1093,7 +1093,7 @@ class KlerosBoardSubgraph(Subgraph):
             courtsInfo[courtID]['Disputes in the last 30 days'] = diff
         return courtsInfo
 
-    def getCourtTotalStaked(self, courtID):
+    def getCourtTotalStaked(self, courtID) -> Union[float, None]:
         query = (
             '{courts(where:{id:"' + str(courtID) + '"}){'
             '   tokenStaked,'
@@ -1106,14 +1106,14 @@ class KlerosBoardSubgraph(Subgraph):
             return self._wei2eth(result['data'][
                 'courts'][0]['tokenStaked'])
 
-    def getCourtWithDisputes(self, courtID):
+    def getCourtWithDisputes(self, courtID) -> Union[Dict, None]:
         court = self.getCourt(courtID)
         if court is None:
             return None
         court['disputes'] = self.getAllCourtDisputes(courtID)
         return court
 
-    def getCourtDisputesNumberBefore(self, days=30):
+    def getCourtDisputesNumberBefore(self, days=30) -> Union[List[Dict], None]:
         blockNumber = self._getBlockNumberbefore(days)
         query = (
             '{courts(block:{number:' + str(blockNumber) + '}){'
@@ -1667,3 +1667,47 @@ class KlerosBoardSubgraph(Subgraph):
         ], ignore_index=True,join="inner")
         df.sort_values(by='timestamp', inplace=True)
         return df
+    
+class PoHSubgrpah(Subgraph):
+    def __init__(self) -> None:
+        super(PoHSubgrpah,self).__init__(network='mainnet')
+        self.logger: logging.Logger = logging.getLogger(__name__)
+
+        # Node definitions
+        self.subgraph_name = 'andreimvp/pohv1-test'
+        self.subgraph_node += self.subgraph_name
+
+    @staticmethod
+    def _parseSubmission(submission) -> dict:
+        keys = submission.keys()
+        if 'registered' in keys:
+            submission['registered'] = True if submission['registered'] == 'true' else False
+        if 'submissionTime' in keys:
+            submission['submissionTime'] = int(submission['submissionTime'])
+        return submission
+
+    
+    def getAllSubmissions(self, initSubmissionTime: int = 1646282170) -> List[dict]:
+        submissions: List[dict] = []
+        while True:
+            query = (
+                '{submissions('
+                '    where: {status: None, submissionTime_gt: "'+ str(initSubmissionTime)+'", registered: true}'
+                '    first: 1000'
+                '    skip: 0'
+                ') {'
+                '    id'
+                '    registered'
+                '    status'
+                '    submissionTime'
+                '}}'
+            )
+            result = self._post_query(query)
+            if result is None:
+                break
+            else:
+                submissions.extend( result['submissions'])
+                initSubmissionTime = result['submissions'][-1]['submissionTime']
+        parse_submissions: List[dict] = [self._parseSubmission(submission) for submission in submissions]
+        return parse_submissions
+        

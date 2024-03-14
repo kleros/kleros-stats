@@ -1,9 +1,0 @@
-[build]
-builder = "NIXPACKS"
-
-[deploy]
-numReplicas = 1
-startCommand = "voila --port=$PORT --no-browser --Voila.ip=0.0.0.0 --preheat_kernel=True --pool_size=2 --theme=dark --VoilaConfiguration.file_whitelist='.*\\.(png)' notebooks/stats.ipynb"
-sleepApplication = false
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10

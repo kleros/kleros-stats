@@ -1,9 +1,11 @@
-voila==0.5.0
-voila-topbar==0.1.1
 ipykernel
 pandas
-jupyterlab-fasta
 plotly
 numpy
 web3
 nbformat>=4.2.0
+Flask==2.3.2
+flask-swagger-ui==4.11.1
+urllib3==1.26.6
+Flask-Cors==4.0.0
+gunicorn==21.2.0
