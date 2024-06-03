@@ -21,10 +21,10 @@ class Subgraph():
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.network: Literal['mainnet', 'gnosis'] = network
         self.index_node = 'https://api.thegraph.com/index-node/graphql'
-        self.subgraph_node = 'https://api.thegraph.com/subgraphs/name/'
+        self.subgraph_node = 'https://api.studio.thegraph.com/query/'
 
     def _post_query(self, query):
-        response: requests.Response = requests.post(self.subgraph_node, json={'query': query})
+        response: requests.Response = requests.post(self.subgraph_node, json={'query': query}, headers={'Content-Type': 'application/json'})
         data = response.json()
         try:
             data = data['data']
@@ -89,9 +89,9 @@ class KlerosBoardSubgraph(Subgraph):
 
         # Node definitions
         if self.network == 'gnosis':
-            self.subgraph_name = 'klerosboard/klerosboard-gnosis'
+            self.subgraph_name = '66145/klerosboard-gnosis/version/latest'
         else:
-            self.subgraph_name = 'klerosboard/klerosboard-mainnet'
+            self.subgraph_name = '66145/klerosboard-mainnet/version/latest'
         self.subgraph_node += self.subgraph_name
 
     @staticmethod
