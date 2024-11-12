@@ -1668,13 +1668,13 @@ class KlerosBoardSubgraph(Subgraph):
         df.sort_values(by='timestamp', inplace=True)
         return df
     
-class PoHSubgrpah(Subgraph):
+class PoHSubgraph(Subgraph):
     def __init__(self) -> None:
-        super(PoHSubgrpah,self).__init__(network='mainnet')
+        super(PoHSubgraph,self).__init__(network='mainnet')
         self.logger: logging.Logger = logging.getLogger(__name__)
 
         # Node definitions
-        self.subgraph_name = 'andreimvp/pohv1-test'
+        self.subgraph_name = '61738/proof-of-humanity-mainnet/version/latest'
         self.subgraph_node += self.subgraph_name
 
     @staticmethod
