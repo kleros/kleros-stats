@@ -1,8 +1,9 @@
-from typing import Any, Dict, List, Literal, Union
+from typing import Set, Dict, List, Literal, Union
 import requests
 import os
 import json
 import logging
+import time
 from datetime import datetime, timedelta
 from collections import defaultdict
 import pandas as pd
@@ -15,16 +16,24 @@ try:
 except TypeError:
     ipfs_node = 'https://ipfs.kleros.io'
 
+networks_available = Literal["mainnet", "gnosis", "arbitrum", "arbitrum_sepolia"]
+
 
 class Subgraph():
-    def __init__(self, network: Literal['mainnet', 'gnosis']) -> None:
+
+    def __init__(self, network: networks_available) -> None:
         self.logger: logging.Logger = logging.getLogger(__name__)
-        self.network: Literal['mainnet', 'gnosis'] = network
+        self.network: networks_available = network
         self.index_node = 'https://api.thegraph.com/index-node/graphql'
         self.subgraph_node = 'https://api.studio.thegraph.com/query/'
 
     def _post_query(self, query):
         response: requests.Response = requests.post(self.subgraph_node, json={'query': query}, headers={'Content-Type': 'application/json'})
+        if response.status_code == 429:
+            print("Too many requests, waiting 5 second")
+            time.sleep(5)
+            return self._post_query(query)
+
         data = response.json()
         try:
             data = data['data']
@@ -36,6 +45,8 @@ class Subgraph():
             return None
         data_length = 0
         for key in data.keys():
+            if data[key] is None:
+                continue
             if len(data[key]) != 0:
                 data_length += 1
                 break
@@ -1667,7 +1678,7 @@ class KlerosBoardSubgraph(Subgraph):
         ], ignore_index=True,join="inner")
         df.sort_values(by='timestamp', inplace=True)
         return df
-    
+
 class PoHSubgraph(Subgraph):
     def __init__(self) -> None:
         super(PoHSubgraph,self).__init__(network='mainnet')
@@ -1680,8 +1691,8 @@ class PoHSubgraph(Subgraph):
     @staticmethod
     def _parseSubmission(submission) -> dict:
         keys = submission.keys()
-        if 'registered' in keys:
-            submission['registered'] = True if submission['registered'] == 'true' else False
+        # if 'registered' in keys:
+        #     submission['registered'] = True if submission['registered'].tolower() == 'true' else False
         if 'submissionTime' in keys:
             submission['submissionTime'] = int(submission['submissionTime'])
         return submission
@@ -1710,4 +1721,96 @@ class PoHSubgraph(Subgraph):
                 initSubmissionTime = result['submissions'][-1]['submissionTime']
         parse_submissions: List[dict] = [self._parseSubmission(submission) for submission in submissions]
         return parse_submissions
-        
+
+class PoHV2Subgraph(Subgraph):
+    def __init__(self, network: Literal["mainnet", "gnosis"]) -> None:
+        super(PoHV2Subgraph,self).__init__(network=network)
+        self.logger: logging.Logger = logging.getLogger(__name__)
+
+        # Node definitions
+        if network == 'mainnet':
+            self.subgraph_name = "61738/poh-origin-mainnet/version/latest"
+        elif network == 'gnosis':
+            self.subgraph_name = "61738/poh-origin-gnosis/version/latest/"
+        else:
+            raise Exception("Network not supported")
+        self.subgraph_node += self.subgraph_name
+
+    @staticmethod
+    def _parseHumanity(humanity) -> dict:
+        keys = humanity.keys()
+        if 'id' in keys:
+            humanity['id'] = humanity['id'].lower()
+        if 'requests' in keys:
+            requests = []
+            for request in humanity['requests']:
+                request['status'] = request['status']['id']
+                requests.append(request)
+            humanity['requests'] = requests
+        return humanity
+
+    def getRegisteredProfiles(self) -> List[Dict]:
+        humanities: List[dict] = []
+        initialId: str = ''
+        while True:
+            query = (
+                '{humanities(where: {id_gt: "'
+                + initialId
+                + '"}, first: 1000, orderBy: id, orderDirection:asc){'
+                    "id,"
+                    'requests(where: {status: "resolved", winnerParty: "requester"}, orderBy: creationTime, orderDirection:asc){'
+                        "status{id}"
+                    "}"
+                "}}"
+            )
+            result = self._post_query(query)
+            if result is None:
+                break
+            else:
+                humanities.extend(result['humanities'])
+                initialId = result['humanities'][-1]['id']
+
+        parsed_humanities: List[dict] = [
+            self._parseHumanity(humanity) for humanity in humanities
+        ]
+        registered_humanities = [humanity["id"] for humanity in parsed_humanities if len(humanity['requests']) > 0]
+        return registered_humanities
+
+class KlerosV2Subgraph(Subgraph):
+    def __init__(self, network: Literal["arbitrum_sepolia", "arbitrum"]) -> None:
+        super(KlerosV2Subgraph, self).__init__(network=network)
+        self.logger: logging.Logger = logging.getLogger(__name__)
+
+        # Node definitions
+        if network == "arbitrum_sepolia":
+            self.subgraph_name = "61738/kleros-v2-core-testnet/version/latest"
+        elif network == "arbitrum":
+            self.subgraph_name = "61738/kleros-v2-coreneo/version/latest"
+        self.subgraph_node += self.subgraph_name
+
+    def _parseTransfer(self, transfer: Dict) -> Dict:
+        keys = transfer.keys()
+        if "ethAmount" in keys:
+            transfer["ethAmount"] = self._wei2eth(transfer["ethAmount"])
+        if "juror" in keys:
+            transfer["juror"] = transfer["juror"]["id"]
+        if "dispute" in keys:
+            transfer["dispute"] = {"lastPeriodChangeBlockNumber": int(transfer["dispute"]["lastPeriodChangeBlockNumber"])}
+        return transfer
+
+    def getCoherentTokenAndETHShifts(self) -> List[Dict]:
+        query = (
+            "{tokenAndETHShifts(where:{ethAmount_gt:0}) { ethAmount, juror { id },dispute {lastPeriodChangeBlockNumber} }}"
+        )
+        result = self._post_query(query)
+        if result is None:
+            return result
+        else:
+            transfers = result["tokenAndETHShifts"]
+            return [self._parseTransfer(transfer=transfer) for transfer in transfers]
+
+    def getJurorsCoherentAtLeastOnce(self) -> Set[str]:
+        transfers = self.getCoherentTokenAndETHShifts()
+        if transfers is None:
+            return set()
+        return set([transfer["juror"] for transfer in transfers])
