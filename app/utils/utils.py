@@ -37,6 +37,8 @@ minting_events: List[Dict[str, Union[datetime, float]]] = [
     {'timestamp': datetime(year=2020, month=2, day=2, hour=14, minute=54, second=36), 'amount': 50_000_000},
     {'timestamp': datetime(year=2020, month=6, day=10, hour=16, minute=2, second=31), 'amount': 200_000_000},
     {'timestamp': datetime(year=2024, month=2, day=22, hour=13, minute=33, second=47), 'amount': 12_000_000},
+    {'timestamp': datetime(year=2025, month=1, day=20, hour=15, minute=5, second=35), 'amount': 28_668_000},
+    {'timestamp': datetime(year=2026, month=1, day=28, hour=10, minute=7, second=23), 'amount': 110_233_518},
 ]
 
 # https://etherscan.io/advanced-filter?tkn=0x93ed3fbe21207ec2e8f2d3c3de6e058cb73bc04d&txntype=2&tadd=0x0000000000000000000000000000000000000000
