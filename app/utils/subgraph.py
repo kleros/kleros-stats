@@ -267,8 +267,8 @@ class KlerosBoardSubgraph(Subgraph):
             court['disputesOngoing'] = int(court['disputesOngoing'])
         if 'disputesClosed' in keys:
             court['disputesClosed'] = int(court['disputesClosed'])
-        if 'subcourt_id' in keys:
-            court['subcourt_id'] = int(court['subcourt_id'])
+        if 'subcourtID' in keys:
+            court['subcourtID'] = int(court['subcourtID'])
         if 'timePeriods' in keys:
             periods = []
             for period in court['timePeriods']:
@@ -310,10 +310,10 @@ class KlerosBoardSubgraph(Subgraph):
         keys = dispute.keys()
         if 'id' in keys:
             dispute['id'] = int(dispute['id'])
-        if 'subcourt_id' in keys:
-            if 'id' in dispute['subcourt_id']:
-                subcourt_id = int(dispute['subcourt_id']['id'])
-                dispute['subcourt_id'] = subcourt_id
+        if 'subcourtID' in keys:
+            if 'id' in dispute['subcourtID']:
+                subcourtID = int(dispute['subcourtID']['id'])
+                dispute['subcourtID'] = subcourtID
         if 'disputeID' in keys:
             dispute['disputeID'] = int(dispute['disputeID'])
         if 'currentRulling' in keys:
@@ -326,9 +326,9 @@ class KlerosBoardSubgraph(Subgraph):
         if 'arbitrable' in keys:
             if 'id' in dispute['arbitrable'].keys():
                 dispute['arbitrable'] = dispute['arbitrable']['id']
-        if ('period' in keys) and ('subcourt_id' in keys):
+        if ('period' in keys) and ('subcourtID' in keys):
             dispute['periodEnds'] = self.getWhenPeriodEnd(dispute,
-                                                          subcourt_id,
+                                                          subcourtID,
                                                           timePeriods
                                                           )
         if 'startTime' in keys:
@@ -437,8 +437,8 @@ class KlerosBoardSubgraph(Subgraph):
 
     def _parseStakeSet(self, stake_set) -> Dict:
         keys = stake_set.keys()
-        if 'subcourt_id' in keys:
-            stake_set['subcourt_id'] = int(stake_set['subcourt_id'])
+        if 'subcourtID' in keys:
+            stake_set['subcourtID'] = int(stake_set['subcourtID'])
         if 'stake' in keys:
             stake_set['stake'] = self._wei2eth(stake_set['stake'])
         if 'newTotalStake' in keys:
@@ -569,8 +569,8 @@ class KlerosBoardSubgraph(Subgraph):
                 'Open Disputes': court['disputesOngoing'],
                 'Min Stake in USD': court['minStake'] * pnkUSDPrice,
                 'Total Disputes': court['disputesNum'],
-                'id': court['subcourt_id'],
-                'Name': self.getCourtName(court['subcourt_id'])
+                'id': court['subcourtID'],
+                'Name': self.getCourtName(court['subcourtID'])
                 }
 
     def getActiveJurorsFromCourt(self, court_id) -> List[Dict]:
@@ -648,7 +648,7 @@ class KlerosBoardSubgraph(Subgraph):
             '''{
             courts{
                 id
-                subcourt_id,
+                subcourtID,
                 disputesOngoing,
                 disputesClosed,
                 disputesNum,
@@ -678,7 +678,7 @@ class KlerosBoardSubgraph(Subgraph):
         blockNumber = self._getBlockNumberbefore(days)
         query = (
             '{courts(block:{number:' + str(blockNumber) + '}){'
-            '   subcourt_id,'
+            '   subcourtID,'
             '   disputesOngoing,'
             '   disputesClosed,'
             '   disputesNum'
@@ -709,10 +709,10 @@ class KlerosBoardSubgraph(Subgraph):
         disputes = []
         while True:
             query = (
-                '{disputes(where:{subcourt_id:"' + str(court_id)
+                '{disputes(where:{subcourtID:"' + str(court_id)
                 + '", disputeID_gt:' + str(initDispute)
                 + '}, orderBy:disputeID,orderDirection:asc){'
-                'id,subcourt_id{id},currentRulling,ruled,startTime,'
+                'id,subcourtID{id},currentRulling,ruled,startTime,'
                 'period,lastPeriodChange'
                 '}}'
             )
@@ -758,7 +758,7 @@ class KlerosBoardSubgraph(Subgraph):
             query = (
                 '{disputes(where:{disputeID_gt:' + str(initDispute) + '},'
                 ' orderDirection:asc, orderBy:disputeID){'
-                'id,subcourt_id{id},currentRulling,ruled,startTime,'
+                'id,subcourtID{id},currentRulling,ruled,startTime,'
                 'period,lastPeriodChange,arbitrable{id}'
                 '}}'
             )
@@ -774,10 +774,10 @@ class KlerosBoardSubgraph(Subgraph):
         courtTimePeriods = self.getTimePeriodsAllCourts()
         parsed_disputes = []
         for dispute in disputes:
-            subcourt_id = dispute['subcourt_id']['id']
+            subcourtID = dispute['subcourtID']['id']
             parsed_disputes.append(self._parseDispute(dispute,
                                                       courtTimePeriods[
-                                                          subcourt_id]))
+                                                          subcourtID]))
         return parsed_disputes
 
     def getAllOpenDisputes(self) -> List[Dict]:
@@ -788,7 +788,7 @@ class KlerosBoardSubgraph(Subgraph):
                 '{disputes(where:{disputeID_gt:' + str(initDispute)
                 + ', ruled:false},'
                 ' orderDirection:asc, orderBy:disputeID){'
-                'id,subcourt_id{id},currentRulling,ruled,startTime,'
+                'id,subcourtID{id},currentRulling,ruled,startTime,'
                 'period,lastPeriodChange,arbitrable{id}'
                 '}}'
             )
@@ -804,10 +804,10 @@ class KlerosBoardSubgraph(Subgraph):
         courtTimePeriods = self.getTimePeriodsAllCourts()
         parsed_disputes = []
         for dispute in disputes:
-            subcourt_id = dispute['subcourt_id']['id']
+            subcourtID = dispute['subcourtID']['id']
             parsed_disputes.append(self._parseDispute(dispute,
                                                       courtTimePeriods[
-                                                          subcourt_id]))
+                                                          subcourtID]))
         return parsed_disputes
 
     def getAllStakeSets(self) -> List[Dict]:
@@ -817,7 +817,7 @@ class KlerosBoardSubgraph(Subgraph):
             query = (
                 '{stakeSets(where:{id_gt:"' + str(initStakes) + '"},'
                 'orderBy:id, orderDirection:asc, first:1000){'
-                'id,address{id},subcourt_id,stake,newTotalStake,timestamp'
+                'id,address{id},subcourtID,stake,newTotalStake,timestamp'
                 '}}'
             )
             result = self._post_query(query)
@@ -952,7 +952,7 @@ class KlerosBoardSubgraph(Subgraph):
             '{'
             'courts(where:{id:"' + str(court_id) + '"}) {'
             '   id,'
-            '   subcourt_id,'
+            '   subcourtID,'
             '   disputesOngoing,'
             '   disputesClosed,'
             '   disputesNum,'
@@ -1003,7 +1003,7 @@ class KlerosBoardSubgraph(Subgraph):
             + str(blockNumber) + '},where:{id:"'
             + str(court_id)
             + '"}){'
-            '   subcourt_id,'
+            '   subcourtID,'
             '   disputesOngoing,'
             '   disputesClosed,'
             '   disputesNum'
@@ -1030,7 +1030,7 @@ class KlerosBoardSubgraph(Subgraph):
         query = (
             '{courts{'
             '   disputesNum'
-            '   subcourt_id'
+            '   subcourtID'
             '}}'
         )
         result = self._post_query(query)
@@ -1048,7 +1048,7 @@ class KlerosBoardSubgraph(Subgraph):
         query = (
             '''{
             courts{
-                subcourt_id,
+                subcourtID,
             }}'''
         )
         result = self._post_query(query)
@@ -1078,9 +1078,9 @@ class KlerosBoardSubgraph(Subgraph):
         oldCourts = self.getCourtDisputesNumberBefore(30)
         if oldCourts is not None:
             for court in oldCourts:
-                oldcourtsDisputes[court['subcourt_id']] = court['disputesNum']
+                oldcourtsDisputes[court['subcourtID']] = court['disputesNum']
         for court in courts:
-            court_id = court['subcourt_id']
+            court_id = court['subcourtID']
             courtsInfo[court_id] = self.court2table(court,
                                                     pnkUSDprice,
                                                     rewardUSDprice)
@@ -1117,7 +1117,7 @@ class KlerosBoardSubgraph(Subgraph):
         query = (
             '{courts(block:{number:' + str(blockNumber) + '}){'
             '   disputesNum'
-            '   subcourt_id'
+            '   subcourtID'
             '}}'
         )
         result = self._post_query(query)
@@ -1148,7 +1148,7 @@ class KlerosBoardSubgraph(Subgraph):
         query = (
             '''{
             courts{
-                subcourt_id,
+                subcourtID,
                 parent{id},
                 activeJurors,
                 tokenStaked,
@@ -1160,13 +1160,13 @@ class KlerosBoardSubgraph(Subgraph):
             courts = defaultdict()
             for court in result['courts']:
                 _court = self._parseCourt(court)
-                courts[_court['subcourt_id']] = {'parent': _court['parent'],
+                courts[_court['subcourtID']] = {'parent': _court['parent'],
                                                  'activeJurors': _court[
                     'activeJurors'],
                     'tokenStaked': _court[
                     'tokenStaked'],
                     'name': self.getCourtName(
-                    _court['subcourt_id'])}
+                    _court['subcourtID'])}
             return courts
 
     def getDashboard(self):
@@ -1220,7 +1220,7 @@ class KlerosBoardSubgraph(Subgraph):
             '    arbitrable{id},'
             '    ruled,'
             '    creator{id},'
-            '    subcourt_id{id},'
+            '    subcourtID{id},'
             '    currentRulling,'
             '    startTime,'
             '    lastPeriodChange'
@@ -1284,7 +1284,7 @@ class KlerosBoardSubgraph(Subgraph):
             '    arbitrable,'
             '    ruled,'
             '    creator{id},'
-            '    subcourt_id{id},'
+            '    subcourtID{id},'
             '    currentRulling,'
             '    lastPeriodChange'
             '    numberOfChoices'
@@ -1318,11 +1318,11 @@ class KlerosBoardSubgraph(Subgraph):
         max_dispute_number = 0
         court_bussiest = None
         for court in courts_data:
-            court_id = court['subcourt_id']
+            court_id = court['subcourtID']
             oldDisputesNum = 0
             if old_courts_data is not None:
                 for oldcourt in old_courts_data:
-                    if court_id == oldcourt['subcourt_id']:
+                    if court_id == oldcourt['subcourtID']:
                         oldDisputesNum = int(oldcourt['disputesNum'])
                         break
             DisputesNum = int(court['disputesNum'])
@@ -1366,7 +1366,7 @@ class KlerosBoardSubgraph(Subgraph):
             '   disputesAsCreator{id,currentRulling,startTime,ruled,txid,'
             '   numberOfChoices}'
             '   allStakes(orderBy:timestamp, orderDirection:desc){'
-            '      subcourt_id, stake, newTotalStake, timestamp}'
+            '      subcourtID, stake, newTotalStake, timestamp}'
             '   ethRewards, tokenRewards'
             '}}'
         )
@@ -1619,7 +1619,7 @@ class KlerosBoardSubgraph(Subgraph):
     def readPolicy(self, court_id):
         query = (
             '{policyUpdates(where:{id:"' + str(court_id) + '"}) {'
-            '    subcourt_id,'
+            '    subcourtID,'
             '    policy,'
             '    contractAddress,'
             '}}'

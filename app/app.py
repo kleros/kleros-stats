@@ -4,7 +4,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 import pandas as pd
 
 from app.utils.subgraph import KlerosBoardSubgraph
-from app.utils.utils import getHistoryFees, getTimeSerieActiveJurors, chain_names, getTimeSeriePNKStakedPercentage
+from app.utils.utils import getHistoryFees, getTimeSerieActiveJurors, chain_names, getTimeSeriePNKStakedPercentage, _FREQ_ALIASES
 
 app = Flask(import_name=__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
@@ -49,6 +49,7 @@ def get_history_growth_active_jurors(chainId: int) -> Response:
     if chain is None:
         return 'Chain not found', 400
     freq: str = request.args.get(key='freq', default='M')
+    freq = _FREQ_ALIASES.get(freq, freq)
 
     active_jurors: pd.DataFrame = getTimeSerieActiveJurors(chain=chain, freq=freq)
     growth: pd.DataFrame = active_jurors.diff()
@@ -63,6 +64,7 @@ def get_history_transactions(chainId: int) -> Response:
     if chain is None:
         return 'Chain not found', 400
     freq: str = request.args.get(key='freq', default='M')
+    freq = _FREQ_ALIASES.get(freq, freq)
 
     kb = KlerosBoardSubgraph(network=chain)
     txs: pd.DataFrame = kb.getAllTransactions()
@@ -87,6 +89,7 @@ def get_history_cases(chainId: int) -> Response:
     if chain is None:
         return 'Chain not found', 400
     freq: str = request.args.get(key='freq', default='M')
+    freq = _FREQ_ALIASES.get(freq, freq)
 
     kb = KlerosBoardSubgraph(network=chain)
     df_disputes = pd.DataFrame(data=kb.getAllDisputes())

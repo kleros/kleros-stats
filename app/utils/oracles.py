@@ -70,7 +70,7 @@ class CoinGecko():
         }
         url = self.api_url + 'coins/{}/market_chart?'.format(id) \
             + urllib.parse.urlencode(parameters)
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         return response.json()
 
     def _getCryptoOldPrice(self, date, id="kleros", vs_currency='usd') -> float or None: # type: ignore
@@ -82,7 +82,7 @@ class CoinGecko():
         }
         url = self.api_url + 'coins/{}/history?'.format(id) \
             + urllib.parse.urlencode(parameters)
-        response = requests.get(url, headers=headers).json()
+        response = requests.get(url, headers=headers, timeout=10).json()
         if 'market_data' in response.keys():
             return response['market_data']['current_price']['usd']
         return None
@@ -98,7 +98,7 @@ class CoinGecko():
           'Accepts': 'application/json',
         }
         url = self.api_url + 'coins/{}?'.format(id) + urllib.parse.urlencode(parameters)
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         return response.json()
 
     def getPNKprice(self) -> float:
@@ -128,11 +128,11 @@ class CoinGecko():
 
     def getETHhistoricPrice(self, days_before=360) -> List[float]:
         response = self._getCryptoHistoric(id='ethereum', days=days_before)
-        return response['prices']
+        return response.get('prices', [])
 
     def getPNKhistoricPrice(self, days_before=360) -> List[float]:
         response = self._getCryptoHistoric(id='kleros', days=days_before)
-        return response['prices']
+        return response.get('prices', [])
 
     def getETHoldPrice(self, timestamp) -> Union[float, None]:
         """get the price of ETH at some specific timestamp (unit s)"""

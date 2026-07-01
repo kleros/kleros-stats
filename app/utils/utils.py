@@ -8,6 +8,9 @@ from app.utils.subgraph import KlerosBoardSubgraph
 
 chain_names: Dict[int, str] = {1: "mainnet", 100: "gnosis"}
 
+# Pandas deprecated short aliases; map legacy → current
+_FREQ_ALIASES: Dict[str, str] = {'M': 'ME', 'Q': 'QE', 'Y': 'YE', 'A': 'YE'}
+
 # https://etherscan.io/advanced-filter?tkn=0x93ed3fbe21207ec2e8f2d3c3de6e058cb73bc04d&txntype=2&fadd=0x0000000000000000000000000000000000000000
 minting_events: List[Dict[str, Union[datetime, float]]] = [
     {'timestamp': datetime(year=2018, month=3, day=15, hour=16, minute=53, second=7), 'amount': 80_000_000},
@@ -44,16 +47,17 @@ burning_events: List[Dict[str, Union[datetime, float]]] = [
 ]
 
 def getTotalSupplyTimeSerie(freq: Literal['D', 'W', 'M']) -> pd.DataFrame:
+    freq = _FREQ_ALIASES.get(freq, freq)
     events: List[Dict[str, Union[datetime, float]]] = minting_events + burning_events
     df = pd.DataFrame(data=events)
     df.sort_values(by='timestamp', ascending=True, inplace=True)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['total_supply'] = df['amount'].cumsum()
-    resampled: pd.DataFrame = df.resample(rule=freq, on='timestamp')['total_supply'].last().fillna(method='ffill')
+    resampled: pd.DataFrame = df.resample(rule=freq, on='timestamp')['total_supply'].last().ffill()
     start_date = resampled.index.min()
     end_date = datetime.now()
     t_index = pd.DatetimeIndex(pd.date_range(start=start_date, end=end_date, freq=freq))
-    return resampled.reindex(t_index).fillna(method='ffill')
+    return resampled.reindex(t_index).ffill()
 
 
 def getActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
@@ -74,7 +78,7 @@ def getActiveJurorsFromStakes(df: pd.DataFrame) -> pd.DataFrame:
     return active_jurors
 
 
-def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame, freq:Literal['D', 'W', 'M']='M') -> pd.DataFrame:
+def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame, freq: Literal['D', 'W', 'M'] = 'M') -> pd.DataFrame:
     """from the setSakes dataframe (subgraph.getAllStakeSets()) add a column
     with the count of active jurors.
 
@@ -83,6 +87,7 @@ def getTimeSerieActiveJurorsFromStakes(df: pd.DataFrame, freq:Literal['D', 'W', 
     outputs:
      - df: the iput dataframe with an extra column called activeJurors
     """
+    freq = _FREQ_ALIASES.get(freq, freq)
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
     df.sort_values(by="timestamp", inplace=True)
     start_timestamp = df["timestamp"].min().replace(hour=0, second=0, minute=0)
@@ -122,7 +127,7 @@ def getTimeSerieActiveJurors(
     return active_jurors
 
 
-def getTimeSeriePNKStakedFromStakes(df: pd.DataFrame, freq="M") -> pd.DataFrame:
+def getTimeSeriePNKStakedFromStakes(df: pd.DataFrame, freq: str = "M") -> pd.DataFrame:
     """from the setSakes dataframe (subgraph.getAllStakeSets()) generate
     a time serie with the total PNK staked.
 
@@ -131,6 +136,7 @@ def getTimeSeriePNKStakedFromStakes(df: pd.DataFrame, freq="M") -> pd.DataFrame:
     outputs:
      - df: a column of total_staked by time in frequency
     """
+    freq = _FREQ_ALIASES.get(freq, freq)
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
     df.sort_values(by="timestamp", inplace=True)
     start_timestamp = df["timestamp"].min().replace(hour=0, second=0, minute=0)
@@ -185,7 +191,7 @@ def getTimeSeriePNKStakedPercentage(
     pnk_staked: pd.DataFrame = getTimeSeriePNKStaked(chain, freq)
 
     total_supply = getTotalSupplyTimeSerie(freq=freq)
-    pnk_staked['total_supply'] = total_supply.reindex(pnk_staked.index).fillna(method='ffill')
+    pnk_staked['total_supply'] = total_supply.reindex(pnk_staked.index).ffill()
 
     pnk_staked["percentage"] = pnk_staked["total_staked"] / pnk_staked["total_supply"]
     return pnk_staked
@@ -214,6 +220,7 @@ def gini(x, w=None) -> float:
 
 
 def getHistoryFees(chain: Literal['mainnet', 'gnosis'], freq: Literal['D', 'W', 'M'] = 'M') -> pd.DataFrame:
+    freq = _FREQ_ALIASES.get(freq, freq)
     # Get all paymens to jurors
     kb = KlerosBoardSubgraph(network=chain)
     transfers = pd.DataFrame(kb.getAllTransfers())
