@@ -3,3 +3,6 @@
 *.csv
 
 .venv/
+
+.env
+!.env.example
